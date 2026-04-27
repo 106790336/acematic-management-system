@@ -1,0 +1,243 @@
+{
+  "appName": "ACEMATIC管理系统",
+  "appId": "ACEMATIC_MGT",
+  "description": "ACEMATIC自动化管理平台 - 目标管理、绩效考核、质量管控",
+  "dataModels": [
+    {
+      "name": "组织架构",
+      "identifier": "org_structure",
+      "fields": [
+        {"name": "center_name", "type": "text", "required": true, "label": "中心名称"},
+        {"name": "center_code", "type": "text", "required": true, "label": "中心编码"},
+        {"name": "position_name", "type": "text", "required": true, "label": "岗位名称"},
+        {"name": "position_code", "type": "text", "required": true, "label": "岗位编码", "unique": true},
+        {"name": "person_name", "type": "text", "required": true, "label": "人员姓名"},
+        {"name": "person_id", "type": "text", "required": true, "label": "人员工号", "unique": true},
+        {"name": "mobile", "type": "text", "label": "手机号"},
+        {"name": "salary_fixed", "type": "number", "default": 0, "label": "固定工资"},
+        {"name": "salary_manage", "type": "number", "default": 0, "label": "管理绩效基数"},
+        {"name": "salary_business", "type": "number", "default": 0, "label": "经营绩效基数"},
+        {"name": "status", "type": "enum", "options": ["在职", "离职"], "default": "在职", "label": "在职状态"},
+        {"name": "create_time", "type": "datetime", "default": "CURRENT_TIMESTAMP", "label": "创建时间"}
+      ]
+    },
+    {
+      "name": "年度目标",
+      "identifier": "annual_goal",
+      "fields": [
+        {"name": "year", "type": "number", "required": true, "label": "年份"},
+        {"name": "center_code", "type": "text", "required": true, "label": "中心编码"},
+        {"name": "goal_type", "type": "enum", "options": ["营收", "利润", "成本"], "label": "目标类型"},
+        {"name": "annual_target", "type": "number", "label": "年度目标"},
+        {"name": "q1_target", "type": "number", "label": "Q1目标"},
+        {"name": "q2_target", "type": "number", "label": "Q2目标"},
+        {"name": "q3_target", "type": "number", "label": "Q3目标"},
+        {"name": "q4_target", "type": "number", "label": "Q4目标"},
+        {"name": "unit", "type": "text", "default": "元", "label": "单位"},
+        {"name": "status", "type": "enum", "options": ["启用", "禁用"], "default": "启用", "label": "状态"}
+      ]
+    },
+    {
+      "name": "月度目标",
+      "identifier": "monthly_goal",
+      "fields": [
+        {"name": "year_month", "type": "text", "required": true, "label": "年月"},
+        {"name": "center_code", "type": "text", "required": true, "label": "中心编码"},
+        {"name": "goal_type", "type": "text", "label": "目标类型"},
+        {"name": "target_value", "type": "number", "label": "目标值"},
+        {"name": "actual_value", "type": "number", "default": 0, "label": "实际完成"},
+        {"name": "achieve_rate", "type": "number", "label": "达成率"},
+        {"name": "status", "type": "enum", "options": ["进行中", "已完成"], "label": "状态"},
+        {"name": "sync_time", "type": "datetime", "label": "数据同步时间"}
+      ]
+    },
+    {
+      "name": "KPI指标库",
+      "identifier": "kpi_indicator",
+      "fields": [
+        {"name": "indicator_name", "type": "text", "required": true, "label": "指标名称"},
+        {"name": "indicator_code", "type": "text", "required": true, "label": "指标编码", "unique": true},
+        {"name": "center_code", "type": "text", "label": "所属中心"},
+        {"name": "position_code", "type": "text", "label": "适用岗位"},
+        {"name": "indicator_type", "type": "enum", "options": ["管理绩效", "经营绩效"], "label": "指标类型"},
+        {"name": "weight", "type": "number", "label": "权重"},
+        {"name": "target_value", "type": "number", "label": "目标值"},
+        {"name": "unit", "type": "text", "label": "单位"},
+        {"name": "formula", "type": "text", "label": "计算公式"},
+        {"name": "data_source", "type": "text", "label": "数据来源"},
+        {"name": "status", "type": "enum", "options": ["启用", "禁用"], "default": "启用", "label": "状态"}
+      ]
+    },
+    {
+      "name": "绩效评分",
+      "identifier": "performance_score",
+      "fields": [
+        {"name": "year_month", "type": "text", "required": true, "label": "年月"},
+        {"name": "person_id", "type": "text", "label": "人员工号"},
+        {"name": "indicator_code", "type": "text", "label": "指标编码"},
+        {"name": "target_value", "type": "number", "label": "目标值"},
+        {"name": "actual_value", "type": "number", "default": 0, "label": "实际值"},
+        {"name": "score", "type": "number", "default": 0, "label": "单项得分"},
+        {"name": "weight", "type": "number", "default": 0, "label": "权重"},
+        {"name": "weighted_score", "type": "number", "default": 0, "label": "加权得分"},
+        {"name": "data_source", "type": "text", "label": "数据来源"},
+        {"name": "record_time", "type": "datetime", "label": "记录时间"}
+      ]
+    },
+    {
+      "name": "工资计算",
+      "identifier": "salary_calculate",
+      "fields": [
+        {"name": "year_month", "type": "text", "required": true, "label": "年月"},
+        {"name": "person_id", "type": "text", "label": "人员工号"},
+        {"name": "person_name", "type": "text", "label": "人员姓名"},
+        {"name": "position_name", "type": "text", "label": "岗位名称"},
+        {"name": "center_name", "type": "text", "label": "中心名称"},
+        {"name": "salary_fixed", "type": "number", "default": 0, "label": "固定工资"},
+        {"name": "attendance_days", "type": "number", "default": 0, "label": "出勤天数"},
+        {"name": "attendance_deduct", "type": "number", "default": 0, "label": "考勤扣减"},
+        {"name": "fixed_actual", "type": "number", "default": 0, "label": "固定工资实发"},
+        {"name": "manage_base", "type": "number", "default": 0, "label": "管理绩效基数"},
+        {"name": "manage_score", "type": "number", "default": 0, "label": "管理绩效得分"},
+        {"name": "manage_actual", "type": "number", "default": 0, "label": "管理绩效实发"},
+        {"name": "business_base", "type": "number", "default": 0, "label": "经营绩效基数"},
+        {"name": "business_score", "type": "number", "default": 0, "label": "经营绩效得分"},
+        {"name": "business_actual", "type": "number", "default": 0, "label": "经营绩效实发"},
+        {"name": "veto_flag", "type": "enum", "options": ["是", "否"], "default": "否", "label": "一票否决标记"},
+        {"name": "veto_amount", "type": "number", "default": 0, "label": "一票否决扣减"},
+        {"name": "total_salary", "type": "number", "default": 0, "label": "当月应发"},
+        {"name": "status", "type": "enum", "options": ["待审核", "已审核", "已发放"], "default": "待审核", "label": "状态"}
+      ]
+    },
+    {
+      "name": "来料检验",
+      "identifier": "iqc_record",
+      "fields": [
+        {"name": "inspect_no", "type": "text", "label": "检验单号", "unique": true},
+        {"name": "material_code", "type": "text", "label": "物料编码"},
+        {"name": "material_name", "type": "text", "label": "物料名称"},
+        {"name": "material_type", "type": "enum", "options": ["A类", "B类", "C类"], "label": "物料分类"},
+        {"name": "supplier_name", "type": "text", "label": "供应商名称"},
+        {"name": "batch_no", "type": "text", "label": "批次号"},
+        {"name": "inspect_qty", "type": "number", "label": "检验数量"},
+        {"name": "qualified_qty", "type": "number", "label": "合格数量"},
+        {"name": "reject_qty", "type": "number", "label": "不合格数量"},
+        {"name": "pass_rate", "type": "number", "label": "合格率"},
+        {"name": "inspect_result", "type": "enum", "options": ["合格", "不合格", "待定"], "label": "检验结果"},
+        {"name": "inspect_type", "type": "enum", "options": ["全检", "抽检"], "label": "检验类型"},
+        {"name": "full_inspect_by", "type": "text", "label": "全检人"},
+        {"name": "sample_inspect_by", "type": "text", "label": "抽检人"},
+        {"name": "quality_sign", "type": "text", "label": "质量签字"},
+        {"name": "sign_time", "type": "datetime", "label": "签字时间"},
+        {"name": "veto_flag", "type": "enum", "options": ["是", "否"], "default": "否", "label": "一票否决"}
+      ]
+    },
+    {
+      "name": "成品检验",
+      "identifier": "oqc_record",
+      "fields": [
+        {"name": "inspect_no", "type": "text", "label": "检验单号", "unique": true},
+        {"name": "product_code", "type": "text", "label": "产品编码"},
+        {"name": "product_name", "type": "text", "label": "产品名称"},
+        {"name": "batch_no", "type": "text", "label": "批次号"},
+        {"name": "inspect_qty", "type": "number", "label": "检验数量"},
+        {"name": "qualified_qty", "type": "number", "label": "合格数量"},
+        {"name": "reject_qty", "type": "number", "label": "不合格数量"},
+        {"name": "pass_rate", "type": "number", "label": "合格率"},
+        {"name": "inspect_result", "type": "enum", "options": ["合格", "不合格", "返工"], "label": "检验结果"},
+        {"name": "sample_size", "type": "number", "label": "抽检数量"},
+        {"name": "full_inspect_by", "type": "text", "label": "全检人"},
+        {"name": "sample_inspect_by", "type": "text", "label": "抽检人"},
+        {"name": "qualified_cert_no", "type": "text", "label": "合格单号"},
+        {"name": "quality_sign", "type": "text", "label": "质量签字"},
+        {"name": "sign_time", "type": "datetime", "label": "签字时间"},
+        {"name": "veto_flag", "type": "enum", "options": ["是", "否"], "default": "否", "label": "一票否决"},
+        {"name": "release_flag", "type": "enum", "options": ["已放行", "未放行"], "default": "未放行", "label": "出库放行"}
+      ]
+    },
+    {
+      "name": "客诉记录",
+      "identifier": "customer_complaint",
+      "fields": [
+        {"name": "complaint_no", "type": "text", "label": "客诉单号", "unique": true},
+        {"name": "customer_name", "type": "text", "label": "客户名称"},
+        {"name": "contact_person", "type": "text", "label": "联系人"},
+        {"name": "contact_phone", "type": "text", "label": "联系电话"},
+        {"name": "product_name", "type": "text", "label": "产品名称"},
+        {"name": "batch_no", "type": "text", "label": "批次号"},
+        {"name": "problem_type", "type": "enum", "options": ["质量", "功能", "外观", "其他"], "label": "问题类型"},
+        {"name": "problem_desc", "type": "text", "label": "问题描述"},
+        {"name": "complaint_time", "type": "datetime", "label": "客诉时间"},
+        {"name": "response_time", "type": "datetime", "label": "响应时间"},
+        {"name": "solution", "type": "text", "label": "解决方案"},
+        {"name": "solve_time", "type": "datetime", "label": "解决时间"},
+        {"name": "solve_result", "type": "enum", "options": ["已解决", "处理中", "未解决"], "label": "处理结果"},
+        {"name": "is_veto", "type": "enum", "options": ["是", "否"], "default": "否", "label": "是否触发一票否决"},
+        {"name": "responsibility_dept", "type": "text", "label": "责任部门"}
+      ]
+    },
+    {
+      "name": "预警记录",
+      "identifier": "alert_record",
+      "fields": [
+        {"name": "alert_no", "type": "text", "label": "预警编号", "unique": true},
+        {"name": "alert_type", "type": "enum", "options": ["绩效", "质量", "交付", "回款"], "label": "预警类型"},
+        {"name": "alert_level", "type": "enum", "options": ["高", "中", "低"], "label": "预警级别"},
+        {"name": "alert_title", "type": "text", "label": "预警标题"},
+        {"name": "alert_content", "type": "text", "label": "预警内容"},
+        {"name": "related_person", "type": "text", "label": "相关人员"},
+        {"name": "related_center", "type": "text", "label": "所属中心"},
+        {"name": "alert_time", "type": "datetime", "label": "预警时间"},
+        {"name": "deal_status", "type": "enum", "options": ["待处理", "已处理", "忽略"], "default": "待处理", "label": "处理状态"},
+        {"name": "deal_time", "type": "datetime", "label": "处理时间"},
+        {"name": "deal_remark", "type": "text", "label": "处理备注"}
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "每日数据同步",
+      "trigger": "schedule",
+      "schedule": "0 7 * * *",
+      "steps": [
+        {"name": "同步销售数据", "type": "api_call", "connector": "suda_erp", "method": "getSalesDaily"},
+        {"name": "同步回款数据", "type": "api_call", "connector": "suda_erp", "method": "getReceipts"},
+        {"name": "计算绩效得分", "type": "custom_js", "code": "calculatePerformance()"},
+        {"name": "生成每日简报", "type": "custom_js", "code": "generateDailyReport()"},
+        {"name": "推送企微消息", "type": "api_call", "connector": "wechat_work", "method": "sendMessage"}
+      ]
+    },
+    {
+      "name": "月度绩效计算",
+      "trigger": "schedule",
+      "schedule": "0 0 1 * *",
+      "steps": [
+        {"name": "汇总月度数据", "type": "custom_js", "code": "aggregateMonthlyData()"},
+        {"name": "计算绩效得分", "type": "custom_js", "code": "calculateMonthlyPerformance()"},
+        {"name": "计算工资", "type": "custom_js", "code": "calculateSalary()"},
+        {"name": "生成工资条", "type": "custom_js", "code": "generateSalarySlip()"},
+        {"name": "推送工资条", "type": "api_call", "connector": "wechat_work", "method": "sendMessage"}
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "name": "速达ERP",
+      "identifier": "suda_erp",
+      "type": "api",
+      "baseUrl": "https://api.suda.com/v2",
+      "auth": {
+        "type": "apiKey",
+        "headerName": "Authorization",
+        "headerPrefix": "Bearer "
+      }
+    },
+    {
+      "name": "企业微信",
+      "identifier": "wechat_work",
+      "type": "wechat_work",
+      "corpId": "YOUR_CORP_ID",
+      "agentId": "YOUR_AGENT_ID"
+    }
+  ]
+}

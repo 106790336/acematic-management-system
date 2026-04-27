@@ -1,0 +1,135 @@
+# 企业微信应用配置
+
+## 1. 创建自建应用
+
+登录企业微信管理后台: https://work.weixin.qq.com/
+
+### 创建步骤:
+1. 进入"应用管理" → "自建应用"
+2. 点击"创建应用"
+3. 填写信息:
+   - 应用名称: ACEMATIC管理系统
+   - 应用描述: 公司自动化管理平台
+4. 设置应用主页:
+   - 类型: 网页链接
+   - URL: https://weda.cloud.tencent.com/h5/你的应用ID
+5. 配置可见范围: 全部成员
+
+### 获取应用凭证:
+进入应用详情页，获取:
+- AgentId: 1000001 (示例)
+- Secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+---
+
+## 2. 微搭连接器配置
+
+```yaml
+连接器名称: 企业微信
+连接器标识: wechat_work
+类型: 企业微信
+企业ID: wwxxxxxxxxxxxxxxx
+AgentId: 1000001
+Secret: 你的Secret
+```
+
+---
+
+## 3. 消息模板配置
+
+### 模板1: 每日简报 (Markdown)
+```json
+{
+  "touser": "@all",
+  "msgtype": "markdown",
+  "markdown": {
+    "content": "## 📊 ACEMATIC 每日经营简报\n\n**日期**: {{date}}\n\n### 🎯 目标进度\n- 营收进度: {{revenue_progress}}%\n- 回款率: {{return_rate}}%\n- 利润进度: {{profit_progress}}%\n\n### ⚠️ 待处理预警\n{{warning_list}}\n\n[查看详情](链接)"
+  }
+}
+```
+
+### 模板2: 预警通知 (Text)
+```json
+{
+  "touser": "相关人员",
+  "msgtype": "text",
+  "text": {
+    "content": "【预警】{{alert_title}}\n{{alert_content}}\n请立即处理！"
+  }
+}
+```
+
+### 模板3: 工资条 (Markdown)
+```json
+{
+  "touser": "员工工号",
+  "msgtype": "markdown",
+  "markdown": {
+    "content": "## 💰 工资条通知\n\n**姓名**: {{name}}\n**岗位**: {{position}}\n**月份**: {{month}}\n\n### 工资明细\n- 固定工资: {{fixed_salary}}元\n- 管理绩效: {{manage_performance}}元\n- 经营绩效: {{business_performance}}元\n- 考勤扣减: {{attendance_deduct}}元\n- **应发合计: {{total}}元**\n\n[查看完整工资单](链接)"
+  }
+}
+```
+
+---
+
+## 4. API权限申请
+
+在企业微信管理后台 → API权限 申请:
+- [x] 通讯录同步 - 读取成员
+- [x] 考勤打卡 - 读取打卡数据
+- [x] 审批流 - 读取审批数据
+- [x] 消息推送 - 发送应用消息
+- [x] 群发消息 - 发送消息到成员
+
+---
+
+## 5. 可信域名配置
+
+在"设置" → "域名可信"中添加:
+- weda.cloud.tencent.com
+
+---
+
+## 6. 数据同步配置
+
+### 考勤同步
+- 方法: getAttendance
+- 频率: 每日06:00
+- 数据: 打卡记录、请假记录
+
+### 审批同步
+- 方法: getApprovalData  
+- 频率: 每日07:00
+- 数据: 请假、报销、采购审批
+
+---
+
+## 7. 测试步骤
+
+1. 发送测试消息:
+```json
+{
+  "touser": "管理员",
+  "msgtype": "text",
+  "text": {
+    "content": "测试消息"
+  }
+}
+```
+
+2. 检查企业微信是否收到消息
+
+3. 测试考勤数据同步
+
+---
+
+## 常见问题
+
+Q1: 消息发送失败
+A: 检查AgentId和Secret是否正确，检查应用可见范围
+
+Q2: 考勤数据为空
+A: 确认企业已开通考勤，确认有打卡记录
+
+Q3: 应用无法打开
+A: 检查H5地址是否正确，检查可信域名配置

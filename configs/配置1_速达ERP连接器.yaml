@@ -1,0 +1,92 @@
+# 速达ERP API连接器配置
+
+## 基础配置
+
+```yaml
+连接器名称: 速达ERP
+连接器标识: suda_erp
+类型: API
+基础URL: https://api.suda.com/v2
+认证方式: API Key
+请求头:
+  Authorization: Bearer {{API_KEY}}
+  Content-Type: application/json
+超时时间: 30秒
+重试次数: 3
+```
+
+## API方法配置
+
+### 方法1: 获取销售日报
+- 方法名称: getSalesDaily
+- 请求方式: POST
+- 请求路径: /sales/daily
+- 请求参数:
+  - date: 字符串 (YYYY-MM-DD)
+  - format: 字符串 (detailed/summary)
+
+### 方法2: 获取回款数据
+- 方法名称: getReceipts
+- 请求方式: POST
+- 请求路径: /finance/receipts
+- 请求参数:
+  - startDate: 字符串 (YYYY-MM-DD)
+  - endDate: 字符串 (YYYY-MM-DD)
+
+### 方法3: 获取库存数据
+- 方法名称: getInventory
+- 请求方式: GET
+- 请求路径: /inventory/current
+
+### 方法4: 获取成本数据
+- 方法名称: getCostDaily
+- 请求方式: POST
+- 请求路径: /cost/daily
+- 请求参数:
+  - date: 字符串 (YYYY-MM-DD)
+
+### 方法5: 获取采购数据
+- 方法名称: getPurchaseDaily
+- 请求方式: POST
+- 请求路径: /purchase/daily
+- 请求参数:
+  - date: 字符串 (YYYY-MM-DD)
+
+## 环境变量配置
+
+在微搭控制台 → 应用设置 → 环境变量中配置:
+
+```
+SUDA_API_KEY: 你的速达ERP API密钥
+SUDA_API_SECRET: 你的速达ERP API密钥
+```
+
+## 测试命令
+
+```bash
+curl -X POST https://api.suda.com/v2/sales/daily \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"date": "2026-04-05", "format": "summary"}'
+```
+
+## 数据映射
+
+| 速达字段 | 微搭字段 | 说明 |
+|----------|----------|------|
+| totalSales | actual_value | 销售额 |
+| receiptRate | actual_value | 回款率 |
+| totalValue | actual_value | 库存金额 |
+| totalCost | actual_value | 总成本 |
+| arrivalRate | actual_value | 到货率 |
+
+## 常见问题
+
+Q1: API返回401错误
+A: 检查API Key是否正确，或联系速达技术支持确认密钥状态
+
+Q2: 数据同步失败
+A: 检查网络连接，增加重试次数，或调整同步时间
+
+Q3: 数据不一致
+A: 确认速达ERP数据生成时间，调整同步时间（如改为08:00）
