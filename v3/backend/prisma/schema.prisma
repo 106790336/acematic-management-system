@@ -1,0 +1,625 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String               @id @default(cuid())
+  username              String               @unique
+  password              String
+  name                  String
+  role                  String               @default("employee")
+  roleId                String?
+  departmentId          String?
+  position              String?
+  avatar                String?
+  email                 String?              @unique
+  phone                 String?
+  isActive              Boolean              @default(true)
+  lastLoginAt           DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  roleInfo              Role?                @relation(fields: [roleId], references: [id])
+  department            Department?          @relation(fields: [departmentId], references: [id])
+  achievements          Achievement[]        @relation("UserAchievements")
+  ownerAnnualGoals      AnnualGoal[]         @relation("AnnualGoalOwner")
+  assessedBy            Assessment[]         @relation("AssessmentAssessor")
+  assessments           Assessment[]         @relation("AssessmentUser")
+  dailyLogs             DailyLog[]           @relation("UserDailyLogs")
+  responsibleMeasures   ImprovementMeasure[] @relation("MeasureResponsible")
+  responsibleIssues     Issue[]              @relation("IssueResponsible")
+  hostedMeetings        Meeting[]            @relation("MeetingHost")
+  recordedMeetings      Meeting[]            @relation("MeetingRecorder")
+  meetingAttendees      MeetingAttendee[]
+  submittedMonthlyPlans MonthlyPlan[]        @relation("PlanSubmitter")
+  ownerMonthlyPlans     NewMonthlyPlan[]     @relation("NewMonthlyPlanOwner")
+  ownerWeeklyPlans      NewWeeklyPlan[]      @relation("NewWeeklyPlanOwner")
+  plans                 Plan[]               @relation("PlanOwner")
+  ownerQuarterlyPlans   QuarterlyPlan[]      @relation("QuarterlyPlanOwner")
+  createdStrategies     Strategy[]           @relation("StrategyCreator")
+  submittedStrategies   Strategy[]           @relation("StrategySubmitter")
+  reviewedStrategies    Strategy[]           @relation("StrategyReviewer")
+  submittedPlans        Plan[]               @relation("PlanSubmitter")
+  reviewedPlans         Plan[]               @relation("PlanReviewer")
+  approvedTasks         Task[]               @relation("TaskApprover")
+  tasks                 Task[]               @relation("TaskAssignee")
+  assignedTasks         Task[]               @relation("TaskAssigner")
+  createdTasks          Task[]               @relation("TaskCreator")
+  submittedTasks        Task[]               @relation("TaskSubmitter")
+  reviewedTasks         Task[]               @relation("TaskReviewer")
+  submittedWeeklyPlans  WeeklyPlan[]         @relation("WeeklyPlanSubmitter")
+  submittedReports      WeeklyReport[]       @relation("ReportSubmitter")
+  changeRequests        ChangeRequest[]      @relation("ChangeRequester")
+  reviewedChanges       ChangeRequest[]      @relation("ChangeReviewer")
+  contentVersions       ContentVersion[]     @relation("ContentVersionChanger")
+  workflowStepReviewer  WorkflowStep[]       @relation("WorkflowStepReviewer")
+  auditLogs             AuditLog[]           @relation("AuditLogUser")
+  deployedVersions      SystemVersion[]      @relation("VersionDeployedBy")
+  rolledBackVersions    SystemVersion[]      @relation("VersionRolledBackBy")
+}
+
+model Department {
+  id              String           @id @default(cuid())
+  name            String
+  parentId        String?
+  managerId       String?
+  description     String?
+  memberCount     Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  achievements    Achievement[]
+  annualGoals     AnnualGoal[]
+  dailyLogs       DailyLog[]
+  parent          Department?      @relation("DepartmentTree", fields: [parentId], references: [id])
+  children        Department[]     @relation("DepartmentTree")
+  issues          Issue[]
+  monthlyData     MonthlyData[]
+  monthlyPlans    MonthlyPlan[]
+  newMonthlyPlans NewMonthlyPlan[]
+  newWeeklyPlans  NewWeeklyPlan[]
+  plans           Plan[]
+  quarterlyPlans  QuarterlyPlan[]
+  members         User[]
+  weeklyPlans     WeeklyPlan[]
+  weeklyReports   WeeklyReport[]
+}
+
+model Strategy {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  year          Int
+  status        String    @default("draft")
+  progress      Int       @default(0)
+  startDate     DateTime
+  endDate       DateTime
+  createdById   String
+  submittedAt   DateTime?
+  submittedById String?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewComment String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  plans         Plan[]
+  createdBy     User      @relation("StrategyCreator", fields: [createdById], references: [id])
+  submittedBy   User?     @relation("StrategySubmitter", fields: [submittedById], references: [id])
+  reviewedBy    User?     @relation("StrategyReviewer", fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model Plan {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  type          String       @default("department")
+  strategyId    String?
+  departmentId  String?
+  ownerId       String
+  status        String       @default("draft")
+  progress      Int          @default(0)
+  priority      String       @default("medium")
+  startDate     DateTime
+  endDate       DateTime
+  submittedAt   DateTime?
+  submittedById String?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewComment String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  assessments   Assessment[]
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  owner         User         @relation("PlanOwner", fields: [ownerId], references: [id])
+  submittedBy   User?        @relation("PlanSubmitter", fields: [submittedById], references: [id])
+  reviewedBy    User?        @relation("PlanReviewer", fields: [reviewedById], references: [id])
+  strategy      Strategy?    @relation(fields: [strategyId], references: [id])
+  tasks         Task[]
+
+  @@index([status])
+  @@index([ownerId])
+}
+
+model Task {
+  id                 String                @id @default(cuid())
+  taskNumber         String                @unique @default("T-000000")
+  title              String
+  description        String?
+  status             String                @default("draft")
+  priority           String                @default("medium")
+  progress           Int                   @default(0)
+  planId             String?
+  assigneeId         String?
+  createdById        String
+  approverId         String?
+  sourceId           String?
+  dueDate            DateTime?
+  completedAt        DateTime?
+  submittedAt        DateTime?
+  submittedById      String?
+  reviewedAt         DateTime?
+  reviewedById       String?
+  reviewComment      String?
+  strategicAlignment Boolean               @default(false)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  assignee           User?                 @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  approver           User?                 @relation("TaskApprover", fields: [approverId], references: [id])
+  createdBy          User                  @relation("TaskCreator", fields: [createdById], references: [id])
+  plan               Plan?                 @relation(fields: [planId], references: [id])
+  source             TaskSource?           @relation(fields: [sourceId], references: [id])
+  submittedBy        User?                 @relation("TaskSubmitter", fields: [submittedById], references: [id])
+  reviewedBy         User?                 @relation("TaskReviewer", fields: [reviewedById], references: [id])
+  executionRecords   TaskExecutionRecord[]
+  assigner           User?                 @relation("TaskAssigner", fields: [assigneeId], references: [id])
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@index([taskNumber])
+}
+
+model TaskSource {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+}
+
+model TaskExecutionRecord {
+  id          String   @id @default(cuid())
+  taskId      String
+  content     String
+  progress    Int      @default(0)
+  recordedAt  DateTime @default(now())
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id         String   @id @default(cuid())
+  userId     String
+  assessorId String
+  planId     String?
+  score      Int
+  comment    String?
+  assessedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  assessor   User     @relation("AssessmentAssessor", fields: [assessorId], references: [id])
+  plan       Plan?    @relation(fields: [planId], references: [id])
+  user       User     @relation("AssessmentUser", fields: [userId], references: [id])
+}
+
+model WeeklyReport {
+  id           String      @id @default(cuid())
+  userId       String
+  weekStart    DateTime
+  weekEnd      DateTime
+  content      String
+  submittedAt  DateTime?
+  submitterId  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  submitter    User?       @relation("ReportSubmitter", fields: [submitterId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model Issue {
+  id            String               @id @default(cuid())
+  issueNumber   String               @unique @default("I-000000")
+  title         String
+  description   String?
+  type          String               @default("problem")
+  priority      String               @default("medium")
+  status        String               @default("open")
+  responsibleId String?
+  dueDate       DateTime?
+  resolvedAt    DateTime?
+  resolution    String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  measures      ImprovementMeasure[]
+  responsible   User?                @relation("IssueResponsible", fields: [responsibleId], references: [id])
+  department    Department?          @relation(fields: [departmentId], references: [id])
+  departmentId  String?
+}
+
+model Meeting {
+  id         String            @id @default(cuid())
+  title      String
+  content    String?
+  startTime  DateTime
+  endTime    DateTime?
+  location   String?
+  status     String            @default("scheduled")
+  hostId     String
+  recorderId String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  attendees  MeetingAttendee[]
+  host       User              @relation("MeetingHost", fields: [hostId], references: [id])
+  recorder   User?             @relation("MeetingRecorder", fields: [recorderId], references: [id])
+}
+
+model MeetingAttendee {
+  id        String  @id @default(cuid())
+  meetingId String
+  userId    String
+  status    String  @default("pending")
+  notes     String?
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+}
+
+model MonthlyData {
+  id           String     @id @default(cuid())
+  departmentId String
+  month        DateTime
+  revenue      Decimal?   @default(0)
+  cost         Decimal?   @default(0)
+  profit       Decimal?   @default(0)
+  headcount    Int?       @default(0)
+  newCustomers Int?       @default(0)
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  department   Department @relation(fields: [departmentId], references: [id])
+}
+
+model ImprovementMeasure {
+  id            String    @id @default(cuid())
+  measureNumber String    @unique @default("M-000000")
+  issueId       String
+  title         String
+  description   String?
+  responsibleId String?
+  dueDate       DateTime?
+  status        String    @default("pending")
+  completedAt   DateTime?
+  result        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  issue         Issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  responsible   User?     @relation("MeasureResponsible", fields: [responsibleId], references: [id])
+}
+
+model AnnualGoal {
+  id           String      @id @default(cuid())
+  year         Int
+  title        String
+  description  String?
+  target       String?
+  actual       String?
+  status       String      @default("draft")
+  ownerId      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  owner        User        @relation("AnnualGoalOwner", fields: [ownerId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model QuarterlyPlan {
+  id           String      @id @default(cuid())
+  year         Int
+  quarter      Int
+  title        String
+  description  String?
+  status       String      @default("draft")
+  ownerId      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  owner        User        @relation("QuarterlyPlanOwner", fields: [ownerId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model NewMonthlyPlan {
+  id           String      @id @default(cuid())
+  year         Int
+  month        Int
+  title        String
+  description  String?
+  status       String      @default("draft")
+  ownerId      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  owner        User        @relation("NewMonthlyPlanOwner", fields: [ownerId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model NewWeeklyPlan {
+  id           String      @id @default(cuid())
+  year         Int
+  week         Int
+  title        String
+  description  String?
+  status       String      @default("draft")
+  ownerId      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  owner        User        @relation("NewWeeklyPlanOwner", fields: [ownerId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model MonthlyPlan {
+  id           String      @id @default(cuid())
+  year         Int
+  month        Int
+  title        String
+  description  String?
+  status       String      @default("draft")
+  submitterId  String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  submitter    User        @relation("PlanSubmitter", fields: [submitterId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model WeeklyPlan {
+  id           String      @id @default(cuid())
+  year         Int
+  week         Int
+  title        String
+  description  String?
+  status       String      @default("draft")
+  submitterId  String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  submitter    User        @relation("WeeklyPlanSubmitter", fields: [submitterId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model DailyLog {
+  id           String      @id @default(cuid())
+  userId       String
+  date         DateTime
+  workContent  String?
+  problems     String?
+  plans        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation("UserDailyLogs", fields: [userId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+}
+
+model TaskExecution {
+  id        String   @id @default(cuid())
+  taskId    String
+  content   String
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Achievement {
+  id                String      @id @default(cuid())
+  achievementNumber String      @unique @default("A-000000")
+  userId            String
+  title             String
+  description       String?
+  date              DateTime
+  type              String      @default("individual")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User        @relation("UserAchievements", fields: [userId], references: [id])
+  department        Department? @relation(fields: [departmentId], references: [id])
+  departmentId      String?
+}
+
+model AlignmentStats {
+  id             String   @id @default(cuid())
+  strategyId     String?
+  planId         String?
+  taskId         String?
+  alignmentScore Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String?
+  module      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       User[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BrandConfig {
+  id        String   @id @default(cuid())
+  logo      String?
+  name      String?
+  theme     String   @default("default")
+  favicon   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workflow {
+  id          String         @id @default(cuid())
+  entityType  String         @unique
+  name        String
+  description String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  steps       WorkflowStep[]
+}
+
+model WorkflowStep {
+  id          String   @id @default(cuid())
+  workflowId  String
+  level       Int
+  name        String
+  description String?
+  reviewerId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reviewer    User?    @relation("WorkflowStepReviewer", fields: [reviewerId], references: [id])
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, level])
+}
+
+model ChangeRequest {
+  id            String    @id @default(cuid())
+  entityType    String
+  entityId      String
+  entityTitle   String?
+  type          String    @default("update")
+  reason        String
+  changes       String?
+  status        String    @default("pending")
+  requesterId   String
+  reviewerId    String?
+  reviewedAt    DateTime?
+  reviewComment String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  requester     User      @relation("ChangeRequester", fields: [requesterId], references: [id])
+  reviewer      User?     @relation("ChangeReviewer", fields: [reviewerId], references: [id])
+
+  @@index([status])
+  @@index([requesterId])
+  @@index([entityType, entityId])
+}
+
+model ContentVersion {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  version     Int
+  content     String
+  changedById String
+  changedAt   DateTime @default(now())
+  changeType  String   @default("update")
+  changedBy   User     @relation("ContentVersionChanger", fields: [changedById], references: [id])
+
+  @@unique([entityType, entityId, version])
+  @@index([entityType, entityId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String // create, update, delete, login, logout, status_change
+  entityType    String // Strategy, Plan, Task, User, etc.
+  entityId      String? // 被操作实体ID
+  entityName    String? // 被操作实体名称（冗余存储）
+  description   String // 操作描述
+  oldValues     String? // 变更前数据（JSON）
+  newValues     String? // 变更后数据（JSON）
+  changedFields String? // 变更字段列表（JSON数组）
+  status        String   @default("success") // success, failed
+  errorMessage  String? // 失败原因
+  userId        String? // 操作人ID
+  userName      String? // 操作人姓名（冗余存储）
+  userDept      String? // 操作人部门（冗余存储）
+  ipAddress     String? // IP地址
+  userAgent     String? // 浏览器信息
+  requestPath   String? // 请求路径
+  requestMethod String? // 请求方法
+  createdAt     DateTime @default(now())
+
+  user User? @relation("AuditLogUser", fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model SystemVersion {
+  id             String    @id @default(cuid())
+  version        String    @unique // 版本号，如 v1.0.0 或 20260427_080000
+  name           String // 版本名称/描述
+  status         String    @default("active") // active, rolled_back, deprecated
+  deployedById   String?
+  deployedAt     DateTime  @default(now())
+  rolledBackAt   DateTime?
+  rolledBackById String?
+  rollbackReason String?
+  dbSnapshot     String? // 数据库备份文件路径
+  codeSnapshot   String? // 代码备份文件路径
+  changes        String? // 变更说明（JSON格式）
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  deployedBy   User? @relation("VersionDeployedBy", fields: [deployedById], references: [id])
+  rolledBackBy User? @relation("VersionRolledBackBy", fields: [rolledBackById], references: [id])
+
+  @@index([status])
+  @@index([deployedAt])
+}
