@@ -1,0 +1,230 @@
+// ACEMATIC V3 Schema修复脚本
+// 执行方式: npx prisma db push 或 npx prisma migrate dev
+
+// === 新增字段说明 ===
+// 1. Task模型扩展：支持子任务、来源追踪、验收流程
+// 2. WorkflowStep扩展：支持按角色审批
+// 3. TaskSource重构：支持多来源关联
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== 核心模型扩展 =====
+
+model Task {
+  id                 String                @id @default(cuid())
+  taskNumber         String                @unique @default("T-000000")
+  title              String
+  description        String?
+  
+  // 状态与进度
+  status             String                @default("draft") // draft, pending, confirmed, active, in_progress, pending_acceptance, completed, rejected
+  priority           String                @default("medium") // low, medium, high, urgent
+  progress           Int                   @default(0)
+  
+  // 🆕 来源追踪
+  sourceType         String?               @default("self_initiated") // assigned, self_initiated, plan_decomposition, strategic_goal
+  sourceRef          String?               // 来源引用（如计划编号）
+  
+  // 🆕 子任务关系
+  parentTaskId       String?
+  parentTask         Task?                 @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subTasks           Task[]                @relation("TaskHierarchy")
+  
+  // 🆕 计划层级关联
+  planId             String?
+  goalId             String?               // 年度目标关联
+  quarterlyPlanId    String?               // 季度计划关联
+  monthlyPlanId      String?               // 月度计划关联
+  weeklyPlanId       String?               // 周计划关联
+  
+  // 🆕 战略对齐
+  strategicAlignment Boolean               @default(false)
+  alignmentTarget    String?               // 对齐目标
+  
+  // 分配与责任
+  assigneeId         String?
+  assignerId         String?
+  createdById        String
+  approverId         String?
+  
+  // 🆕 确认接收流程
+  confirmedAt        DateTime?
+  confirmedById      String?
+  
+  // 🆕 审批流程
+  approvedAt         DateTime?
+  approvalComment    String?
+  
+  // 🆕 验收流程
+  verifyResult       String?               // pass, fail, partial
+  verifiedAt         DateTime?
+  verifiedById       String?
+  verifyComment      String?
+  
+  // 时间节点
+  dueDate            DateTime?
+  completedAt        DateTime?
+  submittedAt        DateTime?
+  submittedById      String?
+  reviewedAt         DateTime?
+  reviewedById       String?
+  reviewComment      String?
+  
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  
+  // 关系
+  assignee           User?                 @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigner           User?                 @relation("TaskAssigner", fields: [assignerId], references: [id])
+  approver           User?                 @relation("TaskApprover", fields: [approverId], references: [id])
+  createdBy          User                  @relation("TaskCreator", fields: [createdById], references: [id])
+  submittedBy        User?                 @relation("TaskSubmitter", fields: [submittedById], references: [id])
+  reviewedBy         User?                 @relation("TaskReviewer", fields: [reviewedById], references: [id])
+  confirmedBy        User?                 @relation("TaskConfirmer", fields: [confirmedById], references: [id])
+  verifiedBy         User?                 @relation("TaskVerifier", fields: [verifiedById], references: [id])
+  plan               Plan?                 @relation(fields: [planId], references: [id])
+  executionRecords   TaskExecutionRecord[]
+  source             TaskSource?           @relation(fields: [sourceId], references: [id])
+  sourceId           String?
+  
+  @@index([status])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@index([parentTaskId])
+  @@index([sourceType])
+}
+
+// 🆕 TaskSource重构
+model TaskSource {
+  id              String   @id @default(cuid())
+  taskId          String   @unique
+  sourceType      String   // assigned, self_initiated, plan_decomposition, strategic_goal, weekly_plan, monthly_plan
+  sourceId        String?  // 原始来源ID
+  sourcePlanId    String?  // 计划来源ID
+  sourceGoalId    String?  // 目标来源ID
+  sourceRef       String?  // 来源编号/引用
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@index([sourceType])
+  @@index([sourceId])
+}
+
+// 🆕 WorkflowStep扩展（支持按角色审批）
+model WorkflowStep {
+  id            String   @id @default(cuid())
+  workflowId    String
+  level         Int
+  name          String
+  description   String?
+  
+  // 🆕 审批方式
+  reviewerType  String   @default("role") // role, user
+  roleId        String?  // 按角色审批时使用
+  reviewerId    String?  // 指定用户审批时使用
+  requireAll    Boolean  @default(false) // 是否需要该角色所有人审批
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  workflow      Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  role          Role?    @relation(fields: [roleId], references: [id])
+  reviewer      User?    @relation(fields: [reviewerId], references: [id])
+  
+  @@unique([workflowId, level])
+  @@index([roleId])
+}
+
+// ===== 其他必要模型（保持原有定义）=====
+
+model User {
+  id                    String               @id @default(cuid())
+  username              String               @unique
+  password              String
+  name                  String
+  role                  String               @default("employee")
+  roleId                String?
+  departmentId          String?
+  position              String?
+  avatar                String?
+  email                 String?              @unique
+  phone                 String?
+  isActive              Boolean              @default(true)
+  lastLoginAt           DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  
+  roleInfo              Role?                @relation(fields: [roleId], references: [id])
+  department            Department?          @relation(fields: [departmentId], references: [id])
+  
+  // 🆕 新增关系
+  confirmedTasks        Task[]               @relation("TaskConfirmer")
+  verifiedTasks         Task[]               @relation("TaskVerifier")
+  
+  // 原有关系保持不变
+  achievements          Achievement[]        @relation("UserAchievements")
+  ownerAnnualGoals      AnnualGoal[]         @relation("AnnualGoalOwner")
+  assessedBy            Assessment[]         @relation("AssessmentAssessor")
+  assessments           Assessment[]         @relation("AssessmentUser")
+  dailyLogs             DailyLog[]           @relation("UserDailyLogs")
+  responsibleMeasures   ImprovementMeasure[] @relation("MeasureResponsible")
+  responsibleIssues     Issue[]              @relation("IssueResponsible")
+  hostedMeetings        Meeting[]            @relation("MeetingHost")
+  recordedMeetings      Meeting[]            @relation("MeetingRecorder")
+  meetingAttendees      MeetingAttendee[]
+  submittedMonthlyPlans MonthlyPlan[]        @relation("PlanSubmitter")
+  ownerMonthlyPlans     NewMonthlyPlan[]     @relation("NewMonthlyPlanOwner")
+  ownerWeeklyPlans      NewWeeklyPlan[]      @relation("NewWeeklyPlanOwner")
+  plans                 Plan[]               @relation("PlanOwner")
+  ownerQuarterlyPlans   QuarterlyPlan[]      @relation("QuarterlyPlanOwner")
+  createdStrategies     Strategy[]           @relation("StrategyCreator")
+  submittedStrategies   Strategy[]           @relation("StrategySubmitter")
+  reviewedStrategies    Strategy[]           @relation("StrategyReviewer")
+  submittedPlans        Plan[]               @relation("PlanSubmitter")
+  reviewedPlans         Plan[]               @relation("PlanReviewer")
+  approvedTasks         Task[]               @relation("TaskApprover")
+  tasks                 Task[]               @relation("TaskAssignee")
+  assignedTasks         Task[]               @relation("TaskAssigner")
+  createdTasks          Task[]               @relation("TaskCreator")
+  submittedTasks        Task[]               @relation("TaskSubmitter")
+  reviewedTasks         Task[]               @relation("TaskReviewer")
+  submittedWeeklyPlans  WeeklyPlan[]         @relation("WeeklyPlanSubmitter")
+  submittedReports      WeeklyReport[]       @relation("ReportSubmitter")
+  changeRequests        ChangeRequest[]      @relation("ChangeRequester")
+  reviewedChanges       ChangeRequest[]      @relation("ChangeReviewer")
+  contentVersions       ContentVersion[]     @relation("ContentVersionChanger")
+  workflowStepReviewer  WorkflowStep[]       @relation("WorkflowStepReviewer")
+  auditLogs             AuditLog[]           @relation("AuditLogUser")
+  deployedVersions      SystemVersion[]      @relation("VersionDeployedBy")
+  rolledBackVersions    SystemVersion[]      @relation("VersionRolledBackBy")
+}
+
+// Role模型扩展（支持WorkflowStep关联）
+model Role {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  label           String
+  description     String?
+  isSystem        Boolean        @default(false)
+  level           Int            @default(0)
+  
+  // 关系
+  users           User[]
+  permissions     RolePermission[]
+  workflowSteps   WorkflowStep[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// 其他模型保持原有定义，此处省略...
+// 实际部署时需要合并到完整schema.prisma中
